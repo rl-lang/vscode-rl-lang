@@ -14,6 +14,7 @@
   "categories": [
     "Programming Languages"
   ],
+  "icon": "icon.png",
   "activationEvents": [
     "onLanguage:rl",
     "workspaceContains:rl.toml"
