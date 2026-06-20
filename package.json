@@ -1,0 +1,90 @@
+{
+  "name": "rl-lang",
+  "displayName": "rl-lang",
+  "description": "Run, check, and scaffold rl-lang projects",
+  "version": "0.0.1",
+  "publisher": "MohamedGonem",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rl-lang/vscode-rl-lang"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Programming Languages"],
+  "activationEvents": ["onLanguage:rl", "workspaceContains:rl.toml"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "rl",
+        "aliases": ["rl-lang", "rl"],
+        "extensions": [".rl"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "rl.run",
+        "title": "rl: Run File",
+        "icon": "$(play)"
+      },
+      {
+        "command": "rl.check",
+        "title": "rl: Check File",
+        "icon": "$(check)"
+      },
+      {
+        "command": "rl.dev",
+        "title": "rl: Dev (run project)",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "rl.new",
+        "title": "rl: New Project"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "rl.run",
+          "when": "resourceExtname == .rl",
+          "group": "navigation@1"
+        },
+        {
+          "command": "rl.check",
+          "when": "resourceExtname == .rl",
+          "group": "navigation@2"
+        },
+        {
+          "command": "rl.dev",
+          "when": "resourceExtname == .rl",
+          "group": "navigation@3"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "rl.run",
+          "when": "resourceExtname == .rl",
+          "group": "rl@1"
+        },
+        {
+          "command": "rl.check",
+          "when": "resourceExtname == .rl",
+          "group": "rl@2"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}

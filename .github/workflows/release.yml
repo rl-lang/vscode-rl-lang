@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - "*"
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-server:
+    name: Build rl binary
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            binary: rl
+            asset: rl-linux-x86_64
+
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            binary: rl.exe
+            asset: rl-windows-x86_64.exe
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "rl-lang -> target"
+
+      - name: Build rl (run + check only, no repl/tui/debug)
+        working-directory: rl-lang
+        run: cargo build --release --no-default-features --features run,eval --target ${{ matrix.target }}
+
+      - name: Copy binary (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: cp rl-lang/target/${{ matrix.target }}/release/${{ matrix.binary }} ${{ matrix.asset }}
+
+      - name: Copy binary (Windows)
+        if: matrix.os == 'windows-latest'
+        run: copy rl-lang\target\${{ matrix.target }}\release\${{ matrix.binary }} ${{ matrix.asset }}
+        shell: cmd
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-${{ matrix.target }}
+          path: ${{ matrix.asset }}
+
+  package:
+    name: Package VSIX
+    needs: build-server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download Linux binary
+        uses: actions/download-artifact@v4
+        with:
+          name: bin-x86_64-unknown-linux-gnu
+          path: bin/linux
+
+      - name: Download Windows binary
+        uses: actions/download-artifact@v4
+        with:
+          name: bin-x86_64-pc-windows-msvc
+          path: bin/windows
+
+      - name: Make Linux binary executable
+        run: chmod +x bin/linux/rl-linux-x86_64
+
+      - name: Install vsce
+        run: npm install -g @vscode/vsce
+
+      - name: Package
+        run: vsce package --no-dependencies
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rl-lang-vscode
+          path: "*.vsix"
+
+      - name: Publish to GitHub Releases
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "*.vsix"
+          generate_release_notes: true

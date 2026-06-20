@@ -1,0 +1,3 @@
+[submodule "rl-lang"]
+	path = rl-lang
+	url = https://github.com/rl-lang/rl-lang.git
