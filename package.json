@@ -1,5 +1,5 @@
 {
-  "name": "rl-lang",
+  "name": "vscode-rl-lang",
   "displayName": "rl-lang",
   "description": "Run, check, and scaffold rl-lang projects",
   "version": "0.0.1",
@@ -11,15 +11,25 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Programming Languages"],
-  "activationEvents": ["onLanguage:rl", "workspaceContains:rl.toml"],
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:rl",
+    "workspaceContains:rl.toml"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "languages": [
       {
         "id": "rl",
-        "aliases": ["rl-lang", "rl"],
-        "extensions": [".rl"],
+        "aliases": [
+          "rl-lang",
+          "rl"
+        ],
+        "extensions": [
+          ".rl"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
