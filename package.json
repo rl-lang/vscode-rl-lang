@@ -2,7 +2,7 @@
   "name": "vscode-rl-lang",
   "displayName": "rl-lang",
   "description": "Run, check, and scaffold rl-lang projects",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "MohamedGonem",
   "repository": {
     "type": "git",
