@@ -44,7 +44,7 @@ No separate installation needed. The `rl` binary is bundled with the extension f
 ## Links
 
 - Language: [rl-lang/rl-lang](https://github.com/rl-lang/rl-lang)
-- Extension: [rl-lang/vscode-rl](https://github.com/rl-lang/vscode-rl-lang)
+- Extension: [rl-lang/vscode-rl-lang](https://github.com/rl-lang/vscode-rl-lang)
 
 ## License
 
