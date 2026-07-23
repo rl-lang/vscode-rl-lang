@@ -1,8 +1,8 @@
 {
   "name": "vscode-rl-lang",
   "displayName": "rl-lang",
-  "description": "Run, check, and scaffold rl-lang projects",
-  "version": "0.0.4",
+  "description": "Language support for rl-lang: syntax highlighting, diagnostics/hover/completions (LSP), and run/check/dev commands",
+  "version": "0.2.0",
   "publisher": "MohamedGonem",
   "repository": {
     "type": "git",
@@ -26,12 +26,20 @@
         "id": "rl",
         "aliases": [
           "rl-lang",
-          "rl"
+          "rl",
+          "RL"
         ],
         "extensions": [
           ".rl"
         ],
         "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "rl",
+        "scopeName": "source.rl",
+        "path": "./syntaxes/rl.tmLanguage.json"
       }
     ],
     "commands": [
@@ -51,8 +59,37 @@
         "icon": "$(rocket)"
       },
       {
+        "command": "rl.format",
+        "title": "rl: Format File",
+        "icon": "$(edit)"
+      },
+      {
         "command": "rl.new",
         "title": "rl: New Project"
+      },
+      {
+        "command": "rl.compile",
+        "title": "rl: Compile to Bytecode (.rlc)"
+      },
+      {
+        "command": "rl.package",
+        "title": "rl: Package as Binary"
+      },
+      {
+        "command": "rl.repl",
+        "title": "rl: Open REPL"
+      },
+      {
+        "command": "rl.docs",
+        "title": "rl: Open Docs"
+      },
+      {
+        "command": "rl.workflows",
+        "title": "rl: Generate GitHub Actions Workflows"
+      },
+      {
+        "command": "rl.restartServer",
+        "title": "rl: Restart Language Server"
       }
     ],
     "menus": {
@@ -71,6 +108,11 @@
           "command": "rl.dev",
           "when": "resourceExtname == .rl",
           "group": "navigation@3"
+        },
+        {
+          "command": "rl.format",
+          "when": "resourceExtname == .rl",
+          "group": "navigation@4"
         }
       ],
       "explorer/context": [
@@ -83,6 +125,21 @@
           "command": "rl.check",
           "when": "resourceExtname == .rl",
           "group": "rl@2"
+        },
+        {
+          "command": "rl.format",
+          "when": "resourceExtname == .rl",
+          "group": "rl@3"
+        },
+        {
+          "command": "rl.compile",
+          "when": "resourceExtname == .rl",
+          "group": "rl@4"
+        },
+        {
+          "command": "rl.package",
+          "when": "resourceExtname == .rl",
+          "group": "rl@5"
         }
       ]
     }
@@ -92,7 +149,9 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./"
   },
-  "dependencies": {},
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
