@@ -83,7 +83,7 @@
       "patterns": [
         {
           "name": "support.type.builtin.rl",
-          "match": "\\b(int|float|bool|string|char|arr|set|map)\\b"
+          "match": "\\b(int|uint|float|bool|string|byte|sbyte|char|arr|set|map|error|result|handle|big|small)\\b"
         },
         {
           "comment": "tag Name { ... } / record Name { ... } declaration name",
@@ -198,6 +198,10 @@
           }
         },
         {
+          "name": "support.function.builtin.rl",
+          "match": "\\b(ok|err)\\b"
+        },
+        {
           "name": "entity.name.function.call.rl",
           "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
           "captures": {
@@ -254,6 +258,10 @@
         {
           "name": "keyword.operator.bang.rl",
           "match": "!#|!"
+        },
+        {
+          "name": "keyword.operator.cast.rl",
+          "match": "\\bas\\b"
         }
       ]
     },

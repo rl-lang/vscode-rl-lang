@@ -2,7 +2,7 @@
   "name": "vscode-rl-lang",
   "displayName": "rl-lang",
   "description": "Language support for rl-lang: syntax highlighting, diagnostics/hover/completions (LSP), and run/check/dev commands",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "publisher": "MohamedGonem",
   "repository": {
     "type": "git",
