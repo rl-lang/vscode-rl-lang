@@ -49,6 +49,8 @@ jobs:
         run: npm run compile
 
       - name: Fetch server binaries
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             ./scripts/fetch-server.sh "${GITHUB_REF_NAME#v}" "${{ matrix.target }}"

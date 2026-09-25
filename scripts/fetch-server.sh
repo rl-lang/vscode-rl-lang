@@ -10,8 +10,12 @@ cd "$(dirname "$0")/.."
 
 ver="${1:-}"
 only="${2:-}"
+# GitHub API rate-limits anonymous calls (shared runner IPs burn through
+# the quota fast). Pass GH_TOKEN to authenticate when available.
+auth=()
+[ -n "${GH_TOKEN:-}" ] && auth=(-H "Authorization: Bearer $GH_TOKEN")
 if [ -z "$ver" ]; then
-  ver="$(curl -fsSL https://api.github.com/repos/rl-lang/rl-lang/releases/latest \
+  ver="$(curl -fsSL "${auth[@]}" https://api.github.com/repos/rl-lang/rl-lang/releases/latest \
     | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")"
   ver="${ver#v}"
 fi
