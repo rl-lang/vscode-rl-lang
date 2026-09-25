@@ -10,99 +10,68 @@ permissions:
   contents: write
 
 jobs:
-  build-server:
-    name: Build rl binary
+  package:
+    name: Package VSIX (${{ matrix.target }} ${{ matrix.vscode-target }})
     strategy:
       matrix:
         include:
-          - target: x86_64-unknown-linux-gnu
+          - target: linux-x86_64
+            vscode-target: linux-x64
             os: ubuntu-latest
-            binary: rl
-            asset: rl-linux-x86_64
-
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-            binary: rl.exe
-            asset: rl-windows-x86_64.exe
-
+          - target: linux-aarch64
+            vscode-target: linux-arm64
+            os: ubuntu-latest
+          - target: macos-x86_64
+            vscode-target: darwin-x64
+            os: ubuntu-latest
+          - target: macos-aarch64
+            vscode-target: darwin-arm64
+            os: ubuntu-latest
+          - target: windows-x86_64
+            vscode-target: win32-x64
+            os: ubuntu-latest
+          - target: windows-aarch64
+            vscode-target: win32-arm64
+            os: ubuntu-latest
     runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-
-      - name: Rust Cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: "rl-lang -> target"
-
-      - name: Install ALSA dev headers (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config libasound2-dev
-
-      - name: Build rl (run, check, dev, new, lsp)
-        working-directory: rl-lang
-        run: cargo build --release --no-default-features --features run,eval,lsp --target ${{ matrix.target }}
-
-      - name: Copy binary (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: cp rl-lang/target/${{ matrix.target }}/release/${{ matrix.binary }} ${{ matrix.asset }}
-
-      - name: Copy binary (Windows)
-        if: matrix.os == 'windows-latest'
-        run: copy rl-lang\target\${{ matrix.target }}\release\${{ matrix.binary }} ${{ matrix.asset }}
-        shell: cmd
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: server-${{ matrix.target }}
-          path: ${{ matrix.asset }}
-
-  package:
-    name: Package VSIX
-    needs: build-server
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: "npm"
 
       - name: Install Extension Dependencies
         run: npm ci
 
-      - name: Download Linux binary
-        uses: actions/download-artifact@v4
-        with:
-          name: server-x86_64-unknown-linux-gnu
-          path: server/linux
+      - name: Compile
+        run: npm run compile
 
-      - name: Download Windows binary
-        uses: actions/download-artifact@v4
-        with:
-          name: server-x86_64-pc-windows-msvc
-          path: server/windows
+      - name: Fetch server binaries
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            ./scripts/fetch-server.sh "${GITHUB_REF_NAME#v}" "${{ matrix.target }}"
+          else
+            ./scripts/fetch-server.sh "" "${{ matrix.target }}"
+          fi
 
-      - name: Make Linux binary executable
-        run: chmod +x server/linux/rl-linux-x86_64
+      - name: Drop other platforms
+        run: |
+          for d in server/*/; do
+            [ "$d" = "server/${{ matrix.target }}/" ] || rm -rf "$d"
+          done
+          ls server/${{ matrix.target }}
 
       - name: Install vsce
         run: npm install -g @vscode/vsce
 
       - name: Package
-        run: vsce package --no-dependencies
+        run: vsce package --no-dependencies --target ${{ matrix.vscode-target }}
 
       - uses: actions/upload-artifact@v4
         with:
-          name: rl-lang-vscode
+          name: vsix-${{ matrix.target }}
           path: "*.vsix"
 
       - name: Publish to GitHub Releases
