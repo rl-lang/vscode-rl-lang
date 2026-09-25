@@ -7,11 +7,19 @@ Full language support for [rl-lang](https://github.com/rl-lang/rl-lang), a stati
 
 - **Syntax highlighting** - keywords, operators, literals, strings, and comments, via a TextMate grammar that works with any theme
 - **Language server** - real-time diagnostics for type errors, undefined variables, and syntax errors, plus hover information for identifiers
+- **Format on save** - `rl format` wired as a document formatter
 - **Commands**:
   - `rl: Run File` - run the current `.rl` file with `rl run`
+  - `rl: Test File` - run `!#[test]` functions with `rl test` (optional `--match`)
   - `rl: Check File` - type-check the current file with `rl check`
+  - `rl: Transpile to C` - transpile with `rlt` (writes `.c` next to the file)
   - `rl: Dev (run project)` - run the current project with `rl dev` (requires an `rl.toml` in the workspace root)
   - `rl: New Project` - scaffold a new project with `rl new`
+  - `rl: Compile to Bytecode (.rlc)` - compile with `rlc compile`
+  - `rl: Package as Binary` - bundle with `rl package`
+  - `rl: Open REPL` - open `rlrepl` in a terminal
+  - `rl: Open Docs` - look up stdlib/concept/tutorial docs with `rldocs`
+  - `rl: Generate GitHub Actions Workflows` - scaffold CI with `rl workflows`
   - `rl: Restart Language Server` - restart the LSP client without reloading the window
 
 ## Usage
@@ -39,7 +47,17 @@ greet(name)
 
 ## Requirements
 
-No separate installation needed. The `rl` binary is bundled with the extension for Linux and Windows (x86_64).
+The extension looks for binaries in two places, in order:
+
+1. Bundled under `server/<os>-<arch>/` (shipped with Marketplace releases).
+2. Your `PATH` (`rl`, `rlc`, `rlt`, `rlrepl`, `rlsp`, `rldocs`, `rlm`).
+
+To fetch the bundled set yourself (all six platform builds):
+
+```bash
+./scripts/fetch-server.sh        # latest release
+./scripts/fetch-server.sh 2.2.1  # pinned version
+```
 
 ## Links
 

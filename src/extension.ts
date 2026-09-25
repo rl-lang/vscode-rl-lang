@@ -1,6 +1,7 @@
 import * as path from "path";
 import * as os from "os";
 import * as fs from "fs/promises";
+import { existsSync } from "fs";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import * as vscode from "vscode";
@@ -16,23 +17,34 @@ const execFileAsync = promisify(execFile);
 let client: LanguageClient | undefined;
 let outputChannel: vscode.OutputChannel;
 
-// The rl binary is built with both the `lsp` and `run,eval` features, so the
-// same executable serves the language server and the run/check/dev/new
-// commands. It's bundled per-platform under server/<platform>/.
-function getRlBinary(context: vscode.ExtensionContext): string {
+// Binaries ship per-platform under server/<os>-<arch>/ (see
+// scripts/fetch-server.sh). The seven tools are separate binaries:
+// rl (run/test/check/...) rlc (compile) rlt (transpile) rlrepl (REPL)
+// rlsp (LSP) rldocs (docs) rlm (toolchain manager).
+function serverDir(context: vscode.ExtensionContext): string {
   const platform = os.platform();
+  const arch = os.arch();
+  let dir: string;
   if (platform === "win32") {
-    return context.asAbsolutePath(
-      path.join("server", "windows", "rl-windows-x86_64.exe")
-    );
+    dir = arch === "arm64" ? "windows-aarch64" : "windows-x86_64";
+  } else if (platform === "darwin") {
+    dir = arch === "arm64" ? "macos-aarch64" : "macos-x86_64";
+  } else {
+    dir = arch === "arm64" ? "linux-aarch64" : "linux-x86_64";
   }
-  return context.asAbsolutePath(path.join("server", "linux", "rl-linux-x86_64"));
+  return context.asAbsolutePath(path.join("server", dir));
+}
+
+// Bundled binary if present, otherwise a bare name resolved via PATH.
+function resolveBin(context: vscode.ExtensionContext, name: string): string {
+  const exe = os.platform() === "win32" ? `${name}.exe` : name;
+  const bundled = path.join(serverDir(context), exe);
+  return existsSync(bundled) ? bundled : exe;
 }
 
 function startLanguageClient(bin: string): LanguageClient {
   const serverOptions: ServerOptions = {
     command: bin,
-    args: ["lsp"],
     transport: TransportKind.stdio,
   };
 
@@ -67,10 +79,10 @@ function runCommand(bin: string, args: string[], cwd: string, label: string) {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  const bin = getRlBinary(context);
+  const bin = (name: string) => resolveBin(context, name);
   outputChannel = vscode.window.createOutputChannel("rl-lang");
 
-  client = startLanguageClient(bin);
+  client = startLanguageClient(bin("rlsp"));
 
   context.subscriptions.push(
     vscode.commands.registerCommand("rl.run", () => {
@@ -81,7 +93,42 @@ export function activate(context: vscode.ExtensionContext) {
       }
       const file = editor.document.uri.fsPath;
       const cwd = path.dirname(file);
-      runCommand(bin, ["run", file], cwd, "run");
+      runCommand(bin("rl"), ["run", file], cwd, "run");
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("rl.test", async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showErrorMessage("rl: no active file");
+        return;
+      }
+      const file = editor.document.uri.fsPath;
+      const cwd = path.dirname(file);
+      const match = await vscode.window.showInputBox({
+        prompt: "Only run tests matching (leave empty for all)",
+        placeHolder: "e.g. money",
+      });
+      if (match === undefined) return;
+      const args = ["test", file];
+      if (match.trim().length > 0) args.push("--match", match.trim());
+      runCommand(bin("rl"), args, cwd, "test");
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("rl.transpile", () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showErrorMessage("rl: no active file");
+        return;
+      }
+      const file = editor.document.uri.fsPath;
+      const cwd = path.dirname(file);
+      const out = file.replace(/\.rl$/, ".c");
+      runCommand(bin("rlt"), [file], cwd, "transpile");
+      vscode.window.showInformationMessage(`rl: transpiled to ${out}`);
     })
   );
 
@@ -94,7 +141,7 @@ export function activate(context: vscode.ExtensionContext) {
       }
       const file = editor.document.uri.fsPath;
       const cwd = path.dirname(file);
-      runCommand(bin, ["check", file], cwd, "check");
+      runCommand(bin("rl"), ["check", file], cwd, "check");
     })
   );
 
@@ -106,7 +153,7 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
       const cwd = folders[0].uri.fsPath;
-      runCommand(bin, ["dev"], cwd, "dev");
+      runCommand(bin("rl"), ["dev"], cwd, "dev");
     })
   );
 
@@ -131,7 +178,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       const args = ["new", name.trim()];
       if (gitChoice === "No") args.push("--no-git");
-      runCommand(bin, args, cwd, "new");
+      runCommand(bin("rl"), args, cwd, "new");
 
       const newDir = vscode.Uri.file(path.join(cwd, name.trim()));
       const open = await vscode.window.showInformationMessage(
@@ -144,7 +191,7 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // `rl compile` — lex/parse/resolve/compile a .rl file to .rlc bytecode.
+  // `rlc compile` - lex/parse/resolve/compile a .rl file to .rlc bytecode.
   context.subscriptions.push(
     vscode.commands.registerCommand("rl.compile", () => {
       const editor = vscode.window.activeTextEditor;
@@ -154,11 +201,11 @@ export function activate(context: vscode.ExtensionContext) {
       }
       const file = editor.document.uri.fsPath;
       const cwd = path.dirname(file);
-      runCommand(bin, ["compile", file], cwd, "compile");
+      runCommand(bin("rlc"), ["compile", file], cwd, "compile");
     })
   );
 
-  // `rl package` — bundle a .rl file into a self-contained binary.
+  // `rl package` - bundle a .rl file into a self-contained binary.
   context.subscriptions.push(
     vscode.commands.registerCommand("rl.package", async () => {
       const editor = vscode.window.activeTextEditor;
@@ -188,36 +235,37 @@ export function activate(context: vscode.ExtensionContext) {
 
       const args = ["package", file, "--output", output.trim()];
       if (vmChoice === "Yes") args.push("--vm");
-      runCommand(bin, args, cwd, "package");
+      runCommand(bin("rl"), args, cwd, "package");
     })
   );
 
-  // `rl repl` — interactive TUI, needs a real terminal (not the output channel).
+  // `rlrepl` - interactive TUI, needs a real terminal (not the output channel).
   context.subscriptions.push(
     vscode.commands.registerCommand("rl.repl", () => {
       const terminal = vscode.window.createTerminal("rl repl");
-      terminal.sendText(`"${bin}" repl`);
+      terminal.sendText(`"${bin("rlrepl")}"`);
       terminal.show();
     })
   );
 
-  // `rl docs` — browse stdlib/concept/tutorial docs, optionally the TUI browser.
+  // `rldocs [topic]` - prints Markdown to stdout, so the output channel fits.
   context.subscriptions.push(
     vscode.commands.registerCommand("rl.docs", async () => {
+      const editor = vscode.window.activeTextEditor;
+      const cwd = editor
+        ? path.dirname(editor.document.uri.fsPath)
+        : vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? os.homedir();
       const topic = await vscode.window.showInputBox({
         prompt: "Docs topic (leave empty to browse everything)",
         placeHolder: "e.g. io, loops, match",
       });
       if (topic === undefined) return;
-
-      const terminal = vscode.window.createTerminal("rl docs");
-      const args = topic.trim().length > 0 ? ` ${topic.trim()}` : "";
-      terminal.sendText(`"${bin}" docs${args} --tui`);
-      terminal.show();
+      const args = topic.trim().length > 0 ? [topic.trim()] : [];
+      runCommand(bin("rldocs"), args, cwd, "docs");
     })
   );
 
-  // `rl workflows` — scaffold GitHub Actions YAML for this project.
+  // `rl workflows` - scaffold GitHub Actions YAML for this project.
   context.subscriptions.push(
     vscode.commands.registerCommand("rl.workflows", async () => {
       const folders = vscode.workspace.workspaceFolders;
@@ -230,6 +278,9 @@ export function activate(context: vscode.ExtensionContext) {
       const picks = await vscode.window.showQuickPick(
         [
           { label: "check", picked: true, description: "rl check on push/PR" },
+          { label: "test", picked: true, description: "rl test on push/PR" },
+          { label: "transpile", picked: false, description: "transpile to C on push/PR" },
+          { label: "format", picked: false, description: "rl format check on push/PR" },
           { label: "package", picked: false, description: "package + release a binary" },
         ],
         {
@@ -240,13 +291,14 @@ export function activate(context: vscode.ExtensionContext) {
       if (!picks || picks.length === 0) return;
 
       const args = ["workflows"];
-      if (picks.some((p) => p.label === "check")) args.push("--check");
-      if (picks.some((p) => p.label === "package")) args.push("--package");
-      runCommand(bin, args, cwd, "workflows");
+      for (const flag of ["check", "test", "transpile", "format", "package"]) {
+        if (picks.some((p) => p.label === flag)) args.push(`--${flag}`);
+      }
+      runCommand(bin("rl"), args, cwd, "workflows");
     })
   );
 
-  // `rl format` — rewrites the file in place, so we go through a temp copy to
+  // `rl format` - rewrites the file in place, so we go through a temp copy to
   // give VS Code real TextEdits (works with "Format Document" and format-on-save).
   context.subscriptions.push(
     vscode.languages.registerDocumentFormattingEditProvider("rl", {
@@ -259,7 +311,7 @@ export function activate(context: vscode.ExtensionContext) {
         );
         await fs.writeFile(tmpFile, document.getText(), "utf8");
         try {
-          await execFileAsync(bin, ["format", tmpFile]);
+          await execFileAsync(bin("rl"), ["format", tmpFile]);
           const formatted = await fs.readFile(tmpFile, "utf8");
           const fullRange = new vscode.Range(
             document.positionAt(0),
@@ -294,7 +346,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (client) {
         await client.stop();
       }
-      client = startLanguageClient(bin);
+      client = startLanguageClient(bin("rlsp"));
       vscode.window.showInformationMessage("rl-lang: language server restarted");
     })
   );

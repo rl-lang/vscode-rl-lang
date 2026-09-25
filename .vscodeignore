@@ -1,5 +1,5 @@
 .github/
-rl-lang/
+scripts/
 src/
 tsconfig.json
 node_modules/
