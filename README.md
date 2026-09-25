@@ -49,7 +49,7 @@ greet(name)
 
 The extension looks for binaries in two places, in order:
 
-1. Bundled under `server/<os>-<arch>/` (shipped with Marketplace releases).
+1. Bundled under `server/<os>-<arch>/` (shipped with GitHub releases).
 2. Your `PATH` (`rl`, `rlc`, `rlt`, `rlrepl`, `rlsp`, `rldocs`, `rlm`).
 
 To fetch the bundled set yourself (all six platform builds):
@@ -63,6 +63,29 @@ To fetch the bundled set yourself (all six platform builds):
 `rl-version.txt` pins the RL toolchain shipped with the extension.
 Bump it when a new RL release is out; tags on this repo are extension
 versions and no longer need to match RL versions.
+
+## Manual install (VS Code and VSCodium)
+
+Grab the `.vsix` for your platform from the
+[releases page](https://github.com/rl-lang/vscode-rl-lang/releases),
+then install it from a terminal:
+
+```bash
+code --install-extension vscode-rl-lang-<version>-<platform>.vsix
+```
+
+For VSCodium replace `code` with `codium`:
+
+```bash
+codium --install-extension vscode-rl-lang-<version>-<platform>.vsix
+```
+
+Or without a terminal: open the Extensions view (`Ctrl+Shift+X`),
+click the `...` menu at the top, pick **Install from VSIX...**, and
+select the file. Same steps in Codium.
+
+There is no official Marketplace listing: GitHub releases are the only
+official distribution, and manual install needs no account.
 
 ## Links
 
