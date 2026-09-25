@@ -55,9 +55,14 @@ The extension looks for binaries in two places, in order:
 To fetch the bundled set yourself (all six platform builds):
 
 ```bash
-./scripts/fetch-server.sh        # latest release
-./scripts/fetch-server.sh 2.2.1  # pinned version
+./scripts/fetch-server.sh            # version from rl-version.txt
+./scripts/fetch-server.sh 2.2.1      # pinned version
+./scripts/fetch-server.sh "" linux-x86_64  # one platform only
 ```
+
+`rl-version.txt` pins the RL toolchain shipped with the extension.
+Bump it when a new RL release is out; tags on this repo are extension
+versions and no longer need to match RL versions.
 
 ## Links
 

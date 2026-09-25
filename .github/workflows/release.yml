@@ -5,6 +5,11 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      rl-version:
+        description: RL toolchain version (empty = rl-version.txt)
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -52,11 +57,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            ./scripts/fetch-server.sh "${GITHUB_REF_NAME#v}" "${{ matrix.target }}"
-          else
-            ./scripts/fetch-server.sh "" "${{ matrix.target }}"
-          fi
+          ./scripts/fetch-server.sh "${{ inputs.rl-version }}" "${{ matrix.target }}"
 
       - name: Drop other platforms
         run: |

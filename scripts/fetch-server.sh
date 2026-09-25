@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Download prebuilt rl binaries into server/.
 # Usage: ./scripts/fetch-server.sh [version] [only-target]
-#   version: 2.2.1 (default: latest release)
+#   version: 2.2.1 (default: rl-version.txt in the repo root)
 #   only-target: e.g. linux-x86_64 (default: all six)
 # Layout: server/<os>-<arch>/{rl,rlc,rlt,rlrepl,rlsp,rldocs,rlm}[.exe]
 # Each release archive holds exactly one binary.
@@ -15,9 +15,13 @@ only="${2:-}"
 auth=()
 [ -n "${GH_TOKEN:-}" ] && auth=(-H "Authorization: Bearer $GH_TOKEN")
 if [ -z "$ver" ]; then
-  ver="$(curl -fsSL "${auth[@]}" https://api.github.com/repos/rl-lang/rl-lang/releases/latest \
-    | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")"
-  ver="${ver#v}"
+  if [ -f rl-version.txt ]; then
+    ver="$(tr -d '[:space:]' < rl-version.txt)"
+  else
+    ver="$(curl -fsSL "${auth[@]}" https://api.github.com/repos/rl-lang/rl-lang/releases/latest \
+      | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")"
+    ver="${ver#v}"
+  fi
 fi
 
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
